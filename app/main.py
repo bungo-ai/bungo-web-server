@@ -9,6 +9,7 @@ load_dotenv()
 
 class OpenAIRequest(BaseModel):
     messages: list
+    host_info: list
 
 app = FastAPI()
 
@@ -19,6 +20,9 @@ if not OPENAI_API_KEY:
 openai.api_key = OPENAI_API_KEY
 
 async def call_openai_api(data: OpenAIRequest):
+    is_first_message = len(data.messages) == 2
+    if(is_first_message):
+        data.messages[0]['content'] += f"Here is information about my computer:\n {data.host_info}"
     try:
         response = openai.chat.completions.create(
             model="gpt-4-turbo-preview",
