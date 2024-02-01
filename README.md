@@ -96,3 +96,9 @@ test/main_test.py::test_ask_openai__openai_reports_rate_limit_reached__529_infor
 
 ======================= 9 passed in 0.35s ========================
 ```
+
+# RULES FOR WORKING WITH THIS REPO
+We follow Trunk-Based development where we merge into main with small branches
+1. You must work on a feature not NOT ON MAIN.
+2. You must open a PR with your feature branch, and get a green build + 1 PR approval from someone else.
+3. You can then merge your branch into main after there are no merge conflicts. (Merge and Squash Commits)
