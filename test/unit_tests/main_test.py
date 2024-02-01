@@ -1,8 +1,60 @@
 import pytest
 from unittest.mock import patch, Mock
 from fastapi import HTTPException
-from app.main import ask_openai, OpenAIRequest
+from httpx import AsyncClient
+from app.main import ask_openai, OpenAIRequest, get_sys_info, update_message_content
 import openai
+
+
+SYS_INFO_KEY = "sys_info"
+
+
+def test_get_sys_info_returns_empty_dict_when_request_context_is_none():
+    data = OpenAIRequest(messages=[], request_context=None)
+    result = get_sys_info(data)
+    assert result == {}
+
+
+def test_get_sys_info_returns_sys_info_from_request_context():
+    sys_info_value = {"os": "linux"}
+    data = OpenAIRequest(messages=[], request_context={SYS_INFO_KEY: sys_info_value})
+    result = get_sys_info(data)
+    assert result == sys_info_value
+
+
+def test_update_message_content_appends_role_data_to_first_message():
+    role_data = "Some role data"
+    data = OpenAIRequest(
+        messages=[{"role": "user", "content": "Hello"}], request_context=None
+    )
+    sys_info_details = {}
+    update_message_content(data, sys_info_details, role_data)
+    assert data.messages[0]["content"] == "HelloSome role data"
+    assert len(data.messages) == 1
+
+
+# TODO: fix this testgit
+def test_update_message_content_appends_sys_info_to_first_message_if_first_message():
+    role_data = ""
+    data = OpenAIRequest(
+        messages=[{"role": "user", "content": "Hello"}], request_context=None
+    )
+    sys_info_details = {"key": "value"}
+    update_message_content(data, sys_info_details, role_data)
+    expected_content = f"Hello\nHere is information about my computer:\n{SYS_INFO_KEY}: {sys_info_details}\n"
+    print(f"Test test test: {data.messages[0]}")
+    assert data.messages[0]["content"] == expected_content
+    assert len(data.messages) == 1
+
+
+def test_update_message_content_does_not_append_sys_info_if_not_first_message():
+    role_data = ""
+    data = OpenAIRequest(
+        messages=[{"role": "system", "content": "System message"}], request_context=None
+    )
+    sys_info_details = {"key": "value"}
+    update_message_content(data, sys_info_details, role_data)
+    assert data.messages[0]["content"] == "System message"
 
 
 @pytest.mark.asyncio
@@ -29,7 +81,7 @@ async def test_request_context_provided__info_added_to_first_system_message():
         mock_openai_call.return_value = mock_openai_response_200
         await ask_openai(data)
         mock_openai_call.assert_called_once()
-        called_with_messages = mock_openai_call.call_args[1]['messages']
+        called_with_messages = mock_openai_call.call_args[1]["messages"]
         for contextStr in request_context_str:
             assert contextStr in called_with_messages[0]['content']
 
@@ -127,13 +179,7 @@ async def test_openai_reports_rate_limit_reached__529_inform_client():
 mock_openai_response_200 = Mock()
 mock_openai_response_200.status_code = 200
 mock_openai_response_200.json.return_value = {
-    "choices": [
-        {
-            "message": {
-                "content": "Test successful response from OpenAI"
-            }
-        }
-    ]
+    "choices": [{"message": {"content": "Test successful response from OpenAI"}}]
 }
 
 # Mock response for error calls
@@ -143,7 +189,8 @@ mock_openai_response_400.message = "Bad Request Error!"
 mock_openai_response_400_error = openai.BadRequestError(
     message=mock_openai_response_400.message,
     response=mock_openai_response_400,
-    body=None)
+    body=None,
+)
 
 mock_openai_response_401 = Mock()
 mock_openai_response_401.status_code = 401
@@ -151,7 +198,8 @@ mock_openai_response_401.message = "Authentication Error!"
 mock_openai_response_401_error = openai.AuthenticationError(
     message=mock_openai_response_401.message,
     response=mock_openai_response_401,
-    body=None)
+    body=None,
+)
 
 mock_openai_response_403 = Mock()
 mock_openai_response_403.status_code = 403
@@ -159,7 +207,8 @@ mock_openai_response_403.message = "Permission Denied Error!"
 mock_openai_response_403_error = openai.PermissionDeniedError(
     message=mock_openai_response_403.message,
     response=mock_openai_response_403,
-    body=None)
+    body=None,
+)
 
 mock_openai_response_404 = Mock()
 mock_openai_response_404.status_code = 404
@@ -167,7 +216,8 @@ mock_openai_response_404.message = "Not Found Error!"
 mock_openai_response_404_error = openai.NotFoundError(
     message=mock_openai_response_404.message,
     response=mock_openai_response_404,
-    body=None)
+    body=None,
+)
 
 mock_openai_response_422 = Mock()
 mock_openai_response_422.status_code = 422
@@ -175,7 +225,8 @@ mock_openai_response_422.message = "Unprocessable Entity Error!"
 mock_openai_response_422_error = openai.UnprocessableEntityError(
     message=mock_openai_response_422.message,
     response=mock_openai_response_422,
-    body=None)
+    body=None,
+)
 
 mock_openai_response_429 = Mock()
 mock_openai_response_429.status_code = 429
@@ -183,7 +234,8 @@ mock_openai_response_429.message = "Rate Limit Error!"
 mock_openai_response_429_error = openai.RateLimitError(
     message=mock_openai_response_429.message,
     response=mock_openai_response_429,
-    body=None)
+    body=None,
+)
 
 mock_openai_response_502 = Mock()
 mock_openai_response_502.status_code = 502
@@ -191,7 +243,8 @@ mock_openai_response_502.message = "Internal Server Error!"
 mock_openai_response_502_error = openai.InternalServerError(
     message=mock_openai_response_502.message,
     response=mock_openai_response_502,
-    body=None)
+    body=None,
+)
 
 mock_openai_response_500 = Mock()
 mock_openai_response_500.message = "API Connection Error!"

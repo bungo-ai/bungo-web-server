@@ -39,11 +39,9 @@ SYS_INFO_KEY = "sys_info"
 
 def get_sys_info(data: OpenAIRequest) -> Dict[str, Any]:
     if data.request_context is not None:
-        sys_info_details = data.request_context.get(
-            SYS_INFO_KEY, "Information not available"
-        )
+        sys_info_details = data.request_context.get(SYS_INFO_KEY, "")
     else:
-        sys_info_details = {"info": "Information not available"}
+        sys_info_details = {}
 
     return sys_info_details
 
@@ -78,9 +76,6 @@ def process_roles(role_id_to_access: str, sys_info_details: Dict[str, Any]) -> s
         )
         role_instance = roles_generated.get(role_id_to_access)
         if role_instance:
-            # print(f"Accessing Role {role_id_to_access}:")
-            # print(f"Name: {role_instance.name}")
-            # print(f"Content: {role_instance.role}")
             return role_instance.role
         else:
             print(f"Role {role_id_to_access} not found.")
@@ -92,7 +87,6 @@ async def call_openai_api(data: OpenAIRequest):
     role_id_to_access = get_role_id_to_access(data)
     role_info = process_roles(role_id_to_access, sys_info_details)
     update_message_content(data, sys_info_details, role_info)
-    print(data.messages[0]["content"])
     try:
         response = openai.chat.completions.create(
             model="gpt-4-turbo-preview", messages=data.messages
