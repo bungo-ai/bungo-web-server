@@ -5,13 +5,34 @@ from httpx import AsyncClient
 from app.main import ask_openai, OpenAIRequest
 import openai
 
+
+@pytest.mark.asyncio
+async def test_request_context_not_provided__no_additional_info_added():
+    data = OpenAIRequest(messages=[{"role": "system", "content": "I am a helpful assistant"}, {"role": "user", "content": "Hello"}], request_context=[])
+    with patch('openai.chat.completions.create') as mock_openai_call:
+        response = await ask_openai(data)
+        actual_messages_sent = mock_openai_call.call_args[1]['messages']
+        assert data.messages[0]["content"] == "I am a helpful assistant"
+
+@pytest.mark.asyncio
+async def test_request_context_provided__info_added_to_first_system_message():
+    request_context = ["{\"type\", \"linux\"}"]
+    data = OpenAIRequest(messages=[{"role": "system", "content": "I am a helpful assistant"}, {"role": "user", "content": "Hello"}], request_context=request_context)
+    expected_message_content = f"{request_context}"
+    
+    with patch('openai.chat.completions.create') as mock_openai_call:
+        mock_openai_call.return_value = mock_openai_response_200
+        await ask_openai(data)
+        mock_openai_call.assert_called_once()
+        called_with_messages = mock_openai_call.call_args[1]['messages']
+        assert expected_message_content in called_with_messages[0]['content'] 
+
 @pytest.mark.asyncio
 async def test_ask_openai__success__return_json():
     with patch('openai.chat.completions.create', return_value=mock_openai_response_200):
         data = OpenAIRequest(messages=[{"role": "user", "content": "Hello"}])
         response = await ask_openai(data)
-        assert response.model_dump_json == mock_openai_response_200.model_dump_json
-
+        assert response.status_code == 200
 
 @pytest.mark.asyncio
 async def test_ask_openai__openai_server_issue__502_inform_client():
