@@ -5,6 +5,7 @@ import openai
 import os
 from dotenv import load_dotenv
 from typing import Optional, Dict, Any
+from app.prompt_engineering.roles import SystemRole, string_to_role_map
 
 load_dotenv()
 
@@ -33,23 +34,65 @@ if not OPENAI_API_KEY:
 
 openai.api_key = OPENAI_API_KEY
 
+SYS_INFO_KEY = "sys_info"
 
-async def call_openai_api(data: OpenAIRequest):
-    is_first_message = len(data.messages) == 1
 
-    sys_info_key = "sys_info"
-    context_has_sys_info = (
-        data.request_context and sys_info_key in data.request_context.keys()
-    )
+def get_sys_info(data: OpenAIRequest) -> Dict[str, Any]:
+    if data.request_context is not None:
+        sys_info_details = data.request_context.get(
+            SYS_INFO_KEY, "Information not available"
+        )
+    else:
+        sys_info_details = {"info": "Information not available"}
 
-    if is_first_message and context_has_sys_info:
-        sys_info_details = data.request_context[sys_info_key]
+    return sys_info_details
+
+
+def update_message_content(
+    data: OpenAIRequest, sys_info_details: Dict[str, Any], role_data: str
+) -> None:
+    is_first_message = len(data.messages) == 2
+    if role_data:
+        data.messages[0]["content"] += role_data
+    if is_first_message and sys_info_details:
         data.messages[0][
             "content"
         ] += f"""
         Here is information about my computer:\n
-        {sys_info_key}: {sys_info_details}
+        {SYS_INFO_KEY}: {sys_info_details}
         """
+
+
+def get_role_id_to_access(data: OpenAIRequest) -> str:
+    role_type_key = "role_key"
+    if data.request_context is not None:
+        return data.request_context.get(role_type_key, "0")
+    else:
+        return "0"  # DEFAULT ROLE
+
+
+def process_roles(role_id_to_access: str, sys_info_details: Dict[str, Any]) -> str:
+    if role_id_to_access and role_id_to_access in string_to_role_map:
+        roles_generated = (
+            SystemRole.generate_roles(sys_info_details) if sys_info_details else {}
+        )
+        role_instance = roles_generated.get(role_id_to_access)
+        if role_instance:
+            # print(f"Accessing Role {role_id_to_access}:")
+            # print(f"Name: {role_instance.name}")
+            # print(f"Content: {role_instance.role}")
+            return role_instance.role
+        else:
+            print(f"Role {role_id_to_access} not found.")
+            return ""
+
+
+async def call_openai_api(data: OpenAIRequest):
+    sys_info_details = get_sys_info(data)
+    role_id_to_access = get_role_id_to_access(data)
+    role_info = process_roles(role_id_to_access, sys_info_details)
+    update_message_content(data, sys_info_details, role_info)
+    print(data.messages[0]["content"])
     try:
         response = openai.chat.completions.create(
             model="gpt-4-turbo-preview", messages=data.messages
