@@ -35,6 +35,7 @@ curl -X 'POST' \
 }'
 ```
 ## Example request with request_context:
+```
 curl -X 'POST' \
   'http://127.0.0.1:80/ask' \
   -H 'accept: application/json' \
@@ -69,7 +70,7 @@ curl -X 'POST' \
     "role_key": "1"
   }
 }'
-
+```
 ## Example response:
 ```
 {
