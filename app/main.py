@@ -24,12 +24,12 @@ openai.api_key = OPENAI_API_KEY
 
 async def call_openai_api(data: OpenAIRequest):
     is_first_message = len(data.messages) == 2
+
     sys_info_key = "sys_info"
-    context_has_sys_info = sys_info_key in data.request_context.keys()
-    should_provide_first_message_context = (is_first_message and
-                                            data.request_context and
-                                            context_has_sys_info)
-    if (should_provide_first_message_context):
+    context_has_sys_info = (data.request_context and
+                            sys_info_key in data.request_context.keys())
+
+    if (is_first_message and context_has_sys_info):
         sys_info_details = data.request_context[sys_info_key]
         data.messages[0]['content'] += f"""
         Here is information about my computer:\n

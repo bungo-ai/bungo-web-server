@@ -11,7 +11,7 @@ async def test_request_context_not_provided__no_additional_info_added():
         {"role": "system", "content": "I am a helpful assistant"},
         {"role": "user", "content": "Hello"}
     ]
-    data = OpenAIRequest(messages, request_context={})
+    data = OpenAIRequest(messages=messages)
     with patch('openai.chat.completions.create'):
         await ask_openai(data)
         assert data.messages[0]["content"] == "I am a helpful assistant"
@@ -25,7 +25,7 @@ async def test_request_context_provided__info_added_to_first_system_message():
         {"role": "system", "content": "I am a helpful assistant"},
         {"role": "user", "content": "Hello"}
     ]
-    data = OpenAIRequest(messages, request_context)
+    data = OpenAIRequest(messages=messages, request_context=request_context)
     with patch('openai.chat.completions.create') as mock_openai_call:
         mock_openai_call.return_value = mock_openai_response_200
         await ask_openai(data)
