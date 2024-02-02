@@ -3,15 +3,15 @@ from pydantic import BaseModel
 import openai
 import os
 from dotenv import load_dotenv
-from pathlib import Path
 from typing import Optional, Dict, Any
 
+load_dotenv()
 
-load_dotenv()  
 
 class OpenAIRequest(BaseModel):
     messages: list
     request_context: Optional[Dict[str, Any]] = None
+
 
 app = FastAPI()
 
@@ -21,11 +21,16 @@ if not OPENAI_API_KEY:
 
 openai.api_key = OPENAI_API_KEY
 
+
 async def call_openai_api(data: OpenAIRequest):
     is_first_message = len(data.messages) == 2
     sys_info_key = "sys_info"
-    if(is_first_message and data.request_context and sys_info_key in data.request_context.keys()):
-        sys_info_details = data.request_context.get(sys_info_key, "Information not available")
+    context_has_sys_info = sys_info_key in data.request_context.keys()
+    should_provide_first_message_context = (is_first_message and
+                                            data.request_context and
+                                            context_has_sys_info)
+    if (should_provide_first_message_context):
+        sys_info_details = data.request_context[sys_info_key]
         data.messages[0]['content'] += f"""
         Here is information about my computer:\n
         {sys_info_key}: {sys_info_details}
@@ -36,24 +41,63 @@ async def call_openai_api(data: OpenAIRequest):
             messages=data.messages
         )
         return response
-    
-    except openai.BadRequestError as e:
-        raise HTTPException(500,f"OpenAI Request denied due to bad request: {e.response}")
-    except openai.AuthenticationError as e:
-        raise HTTPException(500,f"OpenAI Request denied due to authentication issue: {e.response}")
-    except openai.PermissionDeniedError as e:
-        raise HTTPException(500,f"OpenAI Request denied due to permission denied: {e.response}")
-    except openai.NotFoundError as e:
-        raise HTTPException(500,f"OpenAI Request denied due to resource not found: {e.response}")
-    except openai.UnprocessableEntityError as e:
-        raise HTTPException(522,f"OpenAI Request denied due to unprocessible entity: {e.response}")
-    except openai.RateLimitError as e:
-        raise HTTPException(529,f"OpenAI Request denied due to hitting rate limit: {e.response}")
-    
-    except openai.APIConnectionError as e:
-        raise HTTPException(500,f"The OpenAI server could not be reached: {e.__cause__}")
-    except openai.InternalServerError as e:
-        raise HTTPException(502,f"The OpenAI server had an internal error: {e.__cause__}")
+
+    except Exception as e:
+        HandleOpenAICallFailures(e)
+
+
+def HandleOpenAICallFailures(e: Exception):
+    if isinstance(e, openai.BadRequestError):
+        raise HTTPException(
+            500,
+            "OpenAI Request denied due to bad request: {}"
+            .format(e.response)
+        )
+    elif isinstance(e, openai.AuthenticationError):
+        raise HTTPException(
+            500,
+            "OpenAI Request denied due to authentication issue: {}"
+            .format(e.response)
+        )
+    elif isinstance(e, openai.PermissionDeniedError):
+        raise HTTPException(
+            500,
+            "OpenAI Request denied due to permission denied: {}"
+            .format(e.response)
+        )
+    elif isinstance(e, openai.NotFoundError):
+        raise HTTPException(
+            500,
+            "OpenAI Request denied due to resource not found: {}"
+            .format(e.response)
+        )
+    elif isinstance(e, openai.UnprocessableEntityError):
+        raise HTTPException(
+            522,
+            "OpenAI Request denied due to unprocessable entity: {}"
+            .format(e.response)
+        )
+    elif isinstance(e, openai.RateLimitError):
+        raise HTTPException(
+            529,
+            "OpenAI Request denied due to hitting rate limit: {}"
+            .format(e.response)
+        )
+    elif isinstance(e, openai.APIConnectionError):
+        raise HTTPException(
+            500,
+            "The OpenAI server could not be reached: {}"
+            .format(e.__cause__)
+        )
+    elif isinstance(e, openai.InternalServerError):
+        raise HTTPException(
+            502,
+            "The OpenAI server had an internal error: {}"
+            .format(e.__cause__)
+        )
+    else:
+        raise e  # Re-raise the exception if it's not one of the known types
+
 
 @app.post("/ask")
 async def ask_openai(request: OpenAIRequest):
