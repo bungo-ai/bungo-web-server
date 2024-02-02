@@ -53,12 +53,9 @@ def update_message_content(
     if role_data:
         data.messages[0]["content"] += role_data
     if is_first_message and sys_info_details:
-        data.messages[0][
-            "content"
-        ] += f"""
-        Here is information about my computer:\n
-        {SYS_INFO_KEY}: {sys_info_details}
-        """
+        sys_info_content = f"\nHere is information about my computer:\n \
+        {SYS_INFO_KEY}: {sys_info_details}\n"
+        data.messages[0]["content"] += sys_info_content
 
 
 def get_role_id_to_access(data: OpenAIRequest) -> str:
