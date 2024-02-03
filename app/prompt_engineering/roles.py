@@ -1,7 +1,8 @@
-from typing import Dict, Optional
+from app.data_classes.requests.openairequest import OpenAIRequest
+from app.prompt_engineering.system_info import SystemInfo
 
 SHELL_ROLE = """You are a shell generator.
-Provide only {shell} commands for {os} without any description.
+Provide only {shell} commands for {platform} without any description.
 If there is a lack of details, provide most logical solution.
 Ensure the output is a valid shell command.
 If multiple steps required try to combine them together using &&.
@@ -25,7 +26,7 @@ You are not allowed to ask for more details.
 For example if the prompt is "Hello world Python", you should return "print('Hello world')"."""
 
 OS_ROLE = """You are programming and system administration assistant.
-You are managing {os} operating system with {shell} shell.
+You are managing {platform} operating system with {shell} shell.
 Provide short responses in about 100 words, unless you are specifically asked for more details.
 If you need to store any data, assume it will be stored in the conversation.
 APPLY MARKDOWN formatting when possible."""
@@ -49,21 +50,33 @@ string_to_role_map = {
 
 
 class SystemRole:
-    def __init__(
-        self, name: str, role: str, sys_info: Optional[Dict[str, str]]
-    ) -> None:
-        self.name = name
-        if sys_info:
-            role = role.format(**sys_info)
-        self.role = role
 
     @classmethod
-    def generate_roles(
-        cls, sys_info: Optional[Dict[str, str]]
-    ) -> Dict[str, "SystemRole"]:
-        roles = {}
-        for role_id, role_content in string_to_role_map.items():
-            role_name = f"Role_{role_id}"
-            role_instance = cls(role_name, role_content, sys_info)
-            roles[role_id] = role_instance
-        return roles
+    def __role_lookup__(cls, role_id: str, shell: str, platform: str) -> str:
+        role = string_to_role_map.get(role_id, "0")
+        print(role)
+        if platform and shell:
+            role_instance = role.format(platform=platform, shell=shell)
+        else:
+            role_instance = role
+        return role_instance
+
+    @classmethod
+    def __get_role_id___(cls, openai_request: OpenAIRequest) -> str:
+        role_type_key = "role_key"
+        if openai_request.request_context is not None:
+            return openai_request.request_context.get(role_type_key, "0")
+        else:
+            return "0"
+
+    @classmethod
+    def get_role(cls, openai_request: OpenAIRequest) -> str:
+        role_id_to_access = SystemRole.__get_role_id___(openai_request)
+        sys_info = SystemInfo.get_sys_info(openai_request)
+        if sys_info and "shell" in sys_info.keys() and "platform" in sys_info.keys():
+            role = SystemRole.__role_lookup__(
+                role_id_to_access, str(sys_info["shell"]), str(sys_info["platform"])
+            )
+        else:
+            return DEFAULT_ROLE
+        return role

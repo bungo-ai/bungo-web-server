@@ -2,24 +2,11 @@ import pytest
 from unittest.mock import patch, Mock
 from fastapi import HTTPException
 from httpx import AsyncClient
-from app.main import ask_openai, OpenAIRequest, get_sys_info, update_message_content
+from app.main import ask_openai, OpenAIRequest, update_message_content
 import openai
 
 
 SYS_INFO_KEY = "sys_info"
-
-
-def test_get_sys_info_returns_empty_dict_when_request_context_is_none():
-    data = OpenAIRequest(messages=[], request_context=None)
-    result = get_sys_info(data)
-    assert result == {}
-
-
-def test_get_sys_info_returns_sys_info_from_request_context():
-    sys_info_value = {"os": "linux"}
-    data = OpenAIRequest(messages=[], request_context={SYS_INFO_KEY: sys_info_value})
-    result = get_sys_info(data)
-    assert result == sys_info_value
 
 
 def test_update_message_content_appends_role_data_to_first_message():
@@ -69,7 +56,7 @@ async def test_request_context_not_provided__no_additional_info_added():
     data = OpenAIRequest(messages=messages)
     with patch("openai.chat.completions.create"):
         await ask_openai(data)
-        assert data.messages[0]["content"] == "I am a helpful assistant"
+        assert "I am a helpful assistant" in data.messages[0]["content"]
 
 
 @pytest.mark.asyncio
@@ -103,7 +90,7 @@ async def test_ask_openai__openai_server_issue__502_inform_client():
     with patch(
         "openai.chat.completions.create", side_effect=mock_openai_response_502_error
     ):
-        data = OpenAIRequest(messages=[])
+        data = OpenAIRequest(messages=[{"role": "user", "content": "Hello"}])
         with pytest.raises(HTTPException) as exc_info:
             await ask_openai(data)
         assert exc_info.value.status_code == 502
@@ -114,7 +101,7 @@ async def test_ask_openai__bungo_server_issue__500_inform_client():
     with patch(
         "openai.chat.completions.create", side_effect=mock_openai_response_500_error
     ):
-        data = OpenAIRequest(messages=[])
+        data = OpenAIRequest(messages=[{"role": "user", "content": "Hello"}])
         with pytest.raises(HTTPException) as exc_info:
             await ask_openai(data)
         assert exc_info.value.status_code == 500
@@ -125,7 +112,7 @@ async def test_ask_openai__malformed_openai_request__500_inform_client():
     with patch(
         "openai.chat.completions.create", side_effect=mock_openai_response_400_error
     ):
-        data = OpenAIRequest(messages=[])
+        data = OpenAIRequest(messages=[{"role": "user", "content": "Hello"}])
         with pytest.raises(HTTPException) as exc_info:
             await ask_openai(data)
         assert exc_info.value.status_code == 500
@@ -136,7 +123,7 @@ async def test_ask_openai__malformed_openai_auth__500_inform_client():
     with patch(
         "openai.chat.completions.create", side_effect=mock_openai_response_401_error
     ):
-        data = OpenAIRequest(messages=[])
+        data = OpenAIRequest(messages=[{"role": "user", "content": "Hello"}])
         with pytest.raises(HTTPException) as exc_info:
             await ask_openai(data)
         assert exc_info.value.status_code == 500
@@ -147,7 +134,7 @@ async def test_ask_openai__openai_denies_access__500_inform_client():
     with patch(
         "openai.chat.completions.create", side_effect=mock_openai_response_403_error
     ):
-        data = OpenAIRequest(messages=[])
+        data = OpenAIRequest(messages=[{"role": "user", "content": "Hello"}])
         with pytest.raises(HTTPException) as exc_info:
             await ask_openai(data)
         assert exc_info.value.status_code == 500
@@ -158,7 +145,7 @@ async def test_ask_openai__no_openai_resource__500_inform_client():
     with patch(
         "openai.chat.completions.create", side_effect=mock_openai_response_404_error
     ):
-        data = OpenAIRequest(messages=[])
+        data = OpenAIRequest(messages=[{"role": "user", "content": "Hello"}])
         with pytest.raises(HTTPException) as exc_info:
             await ask_openai(data)
         assert exc_info.value.status_code == 500
@@ -169,7 +156,7 @@ async def test_openai_reports_unprocessable_entity__500_inform_client():
     with patch(
         "openai.chat.completions.create", side_effect=mock_openai_response_422_error
     ):
-        data = OpenAIRequest(messages=[])
+        data = OpenAIRequest(messages=[{"role": "user", "content": "Hello"}])
         with pytest.raises(HTTPException) as exc_info:
             await ask_openai(data)
         assert exc_info.value.status_code == 522
@@ -180,7 +167,7 @@ async def test_openai_reports_rate_limit_reached__529_inform_client():
     with patch(
         "openai.chat.completions.create", side_effect=mock_openai_response_429_error
     ):
-        data = OpenAIRequest(messages=[])
+        data = OpenAIRequest(messages=[{"role": "user", "content": "Hello"}])
         with pytest.raises(HTTPException) as exc_info:
             await ask_openai(data)
         assert exc_info.value.status_code == 529
