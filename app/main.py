@@ -23,7 +23,7 @@ openai.api_key = OPENAI_API_KEY
 
 
 async def call_openai_api(data: OpenAIRequest):
-    is_first_message = len(data.messages) == 2
+    is_first_message = len(data.messages) == 1
 
     sys_info_key = "sys_info"
     context_has_sys_info = (data.request_context and
