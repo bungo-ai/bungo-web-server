@@ -22,7 +22,6 @@ async def test_request_context_provided__info_added_to_first_system_message():
     request_context = {"sys_info": ["{type, linux}"]}
     request_context_str = ["sys_info", "type", "linux"]
     messages = [
-        {"role": "system", "content": "I am a helpful assistant"},
         {"role": "user", "content": "Hello"}
     ]
     data = OpenAIRequest(messages=messages, request_context=request_context)
