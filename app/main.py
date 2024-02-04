@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
 import os
@@ -14,6 +15,18 @@ class OpenAIRequest(BaseModel):
 
 
 app = FastAPI()
+
+# My current take is that CORS is not necessary in our desktop environment,
+# Since our auth will inevitably be non-cookie / non-token based, it won't
+# really be possible for users to use cross-origin requests to exploit
+# users in this fashion... Correct me if you feel differently though
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
