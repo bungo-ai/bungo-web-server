@@ -5,14 +5,12 @@ services:
     build:
       context: .
       target: builder
-    environment:
-      - OPENAI_API_KEY=/run/secrets/openai_api_token
     ports:
       - '80:80'
     secrets:
       - openai_api_token
 
-    command: ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 80"]
+    command: ["sh", "-c", "export OPENAI_API_KEY=$(cat /run/secrets/openai_api_token) && uvicorn app.main:app --host 0.0.0.0 --port 80"]
 
 secrets:
   openai_api_token:

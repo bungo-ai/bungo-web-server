@@ -15,18 +15,12 @@ class OpenAIRequest(BaseModel):
 
 app = FastAPI()
 
-OPENAI_API_KEY_FILE = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY_FILE:
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
     raise ValueError(
-        "OpenAI API key file path not found. Make sure the environment\
+        "OpenAI API key not found. Make sure the environment\
          variable OPENAI_API_KEY is set."
     )
-
-with open(OPENAI_API_KEY_FILE, "r") as key_file:
-    OPENAI_API_KEY = key_file.read().strip()
-
-if not OPENAI_API_KEY:
-    raise ValueError(f"OpenAI API key not found in the {OPENAI_API_KEY_FILE}.")
 
 
 openai.api_key = OPENAI_API_KEY
