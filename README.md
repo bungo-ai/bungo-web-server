@@ -34,6 +34,43 @@ curl -X 'POST' \
   ]
 }'
 ```
+## Example request with request_context:
+```
+curl -X 'POST' \
+  'http://127.0.0.1:80/ask' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "What is my OS and how can I list all the files in my home dir?"
+    }
+  ],
+  "request_context": {
+    "sys_info": {
+      "hostname": "DevBox",
+      "os": "Linux",
+      "shell": "bash",
+      "arch": "x64",
+      "release": "6.5.0-15-generic",
+      "type": "Linux",
+      "version": "#15~22.04.1-Ubuntu SMP PREEMPT_DYNAMIC Fri Jan 12 18:54:30 UTC 2",
+      "nullPath": "/dev/null",
+      "homedir": "/home/dylan",
+      "tempdir": "/tmp",
+      "freeMemory": 1598173184,
+      "totalMemory": 8118837248,
+      "lineEnding": "\n"
+    },
+    "role_key": "1"
+  }
+}'
+```
 ## Example response:
 ```
 {

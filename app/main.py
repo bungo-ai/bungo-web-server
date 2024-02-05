@@ -4,14 +4,12 @@ from pydantic import BaseModel
 import openai
 import os
 from dotenv import load_dotenv
-from typing import Optional, Dict, Any
+from typing import Dict, Any
+from prompt_engineering.roles import SystemRole
+from data_classes.requests.openairequest import OpenAIRequest
+from prompt_engineering.system_info import SystemInfo
 
 load_dotenv()
-
-
-class OpenAIRequest(BaseModel):
-    messages: list
-    request_context: Optional[Dict[str, Any]] = None
 
 
 app = FastAPI()
@@ -33,26 +31,28 @@ if not OPENAI_API_KEY:
 
 openai.api_key = OPENAI_API_KEY
 
+SYS_INFO_KEY = "sys_info"
 
-async def call_openai_api(data: OpenAIRequest):
-    is_first_message = len(data.messages) == 1
 
-    sys_info_key = "sys_info"
-    context_has_sys_info = (
-        data.request_context and sys_info_key in data.request_context.keys()
-    )
+def update_message_content(
+    data: OpenAIRequest, sys_info_details: Dict[str, Any], role_data: str
+) -> None:
+    is_first_message = len(data.messages) == 2
+    if role_data:
+        data.messages[0]["content"] += role_data
+    if is_first_message and sys_info_details:
+        sys_info_content = f"\nHere is information about my computer:\n \
+        {SYS_INFO_KEY}: {sys_info_details}\n"
+        data.messages[0]["content"] += sys_info_content
 
-    if is_first_message and context_has_sys_info:
-        sys_info_details = data.request_context[sys_info_key]
-        data.messages[0][
-            "content"
-        ] += f"""
-        Here is information about my computer:\n
-        {sys_info_key}: {sys_info_details}
-        """
+
+async def call_openai_api(openai_request: OpenAIRequest):
+    sys_info = SystemInfo.get_sys_info(openai_request)
+    role = SystemRole.get_role(openai_request)
+    update_message_content(openai_request, sys_info, role)
     try:
         response = openai.chat.completions.create(
-            model="gpt-4-turbo-preview", messages=data.messages
+            model="gpt-4-turbo-preview", messages=openai_request.messages
         )
         return response
 
