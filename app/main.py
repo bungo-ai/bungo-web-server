@@ -16,15 +16,10 @@ class OpenAIRequest(BaseModel):
 
 app = FastAPI()
 
-# My current take is that CORS is not necessary in our desktop environment,
-# Since our auth will inevitably be non-cookie / non-token based, it won't
-# really be possible for users to use cross-origin requests to exploit
-# users in this fashion... Correct me if you feel differently though
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "FETCH"],
     allow_headers=["*"],
 )
 
