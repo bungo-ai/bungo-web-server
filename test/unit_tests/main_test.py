@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import patch, Mock
 from fastapi import HTTPException
-from httpx import AsyncClient
 from app.main import ask_openai, OpenAIRequest, update_message_content
 import openai
 

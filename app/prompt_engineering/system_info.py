@@ -12,6 +12,4 @@ class SystemInfo:
             sys_info_details = openai_request.request_context.get(SYS_INFO_KEY, "")
         else:
             sys_info_details = {}
-
-        print(f"sys_info: {sys_info_details}")
         return sys_info_details
