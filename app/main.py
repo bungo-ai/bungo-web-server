@@ -5,9 +5,9 @@ import openai
 import os
 from dotenv import load_dotenv
 from typing import Dict, Any
-from app.prompt_engineering.roles import SystemRole
-from app.data_classes.requests.openairequest import OpenAIRequest
-from app.prompt_engineering.system_info import SystemInfo
+from prompt_engineering.roles import SystemRole
+from data_classes.requests.openairequest import OpenAIRequest
+from prompt_engineering.system_info import SystemInfo
 
 load_dotenv()
 

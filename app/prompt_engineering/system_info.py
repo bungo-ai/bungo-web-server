@@ -1,5 +1,5 @@
 from typing import Any, Dict
-from app.data_classes.requests.openairequest import OpenAIRequest
+from data_classes.requests.openairequest import OpenAIRequest
 
 SYS_INFO_KEY = "sys_info"
 

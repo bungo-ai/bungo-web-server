@@ -1,5 +1,5 @@
-from app.data_classes.requests.openairequest import OpenAIRequest
-from app.prompt_engineering.system_info import SystemInfo
+from data_classes.requests.openairequest import OpenAIRequest
+from prompt_engineering.system_info import SystemInfo
 
 
 class SystemRole:
